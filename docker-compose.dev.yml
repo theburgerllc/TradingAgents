@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  tradingagents-dev:
+    build: .
+    container_name: tradingagents-dev
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - FINNHUB_API_KEY=${FINNHUB_API_KEY}
+      - TRADINGAGENTS_RESULTS_DIR=/app/results
+      - TRADINGAGENTS_ENV=development
+    volumes:
+      - .:/app
+      - ./results:/app/results
+      - ./data:/app/data
+      - ./logs:/app/logs
+    ports:
+      - "8000:8000"
+    command: python -m cli.main
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+    networks:
+      - tradingagents-dev-network
+
+networks:
+  tradingagents-dev-network:
+    driver: bridge

@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  tradingagents:
+    build: .
+    container_name: tradingagents
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - FINNHUB_API_KEY=${FINNHUB_API_KEY}
+      - TRADINGAGENTS_RESULTS_DIR=/app/results
+      - TRADINGAGENTS_ENV=production
+    volumes:
+      - ./results:/app/results
+      - ./data:/app/data
+      - ./logs:/app/logs
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "from tradingagents.graph.trading_graph import TradingAgentsGraph; print('healthy')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - tradingagents-network
+
+  # Optional: Redis for caching (if needed for scaling)
+  redis:
+    image: redis:7-alpine
+    container_name: tradingagents-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - tradingagents-network
+
+  # Optional: ChromaDB for vector storage
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: tradingagents-chromadb
+    ports:
+      - "8001:8000"
+    volumes:
+      - chromadb_data:/chroma/chroma
+    environment:
+      - CHROMA_HOST=0.0.0.0
+      - CHROMA_PORT=8000
+    restart: unless-stopped
+    networks:
+      - tradingagents-network
+
+volumes:
+  redis_data:
+  chromadb_data:
+
+networks:
+  tradingagents-network:
+    driver: bridge
